@@ -1,5 +1,5 @@
 {
-  "name": "mijohansen/doctrine-util",
+  "name": "mijohansen/doctrine-codegen",
   "description": "Small lib to share common functions working with Doctrine.",
   "type": "library",
   "version": "0.0.2",
