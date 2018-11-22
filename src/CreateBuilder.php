@@ -2,6 +2,8 @@
 
 namespace DbUtil;
 
+use Doctrine\Common\Inflector\Inflector;
+
 class CreateBuilder {
 
     /**
@@ -37,7 +39,8 @@ class CreateBuilder {
         $builder = self::createQueryBuilderFromPdoString($pdoString);
         $builder->insert($tableName);
         foreach ($data as $key => $val) {
-            $builder->setValue($key, $builder->createNamedParameter($val));
+            $tableizedKey = Inflector::tableize($key);
+            $builder->setValue($tableizedKey, $builder->createNamedParameter($val));
         }
         return $builder;
     }

@@ -13,12 +13,19 @@ use gossi\docblock\Docblock;
 use gossi\docblock\tags\ReturnTag;
 use PDO;
 
+/**
+ * Class CodeGen
+ * Generates a very simple model with constants representing the tables and fields.
+ *
+ * @package DbUtil
+ */
 class CodeGen {
 
     static function generate($config) {
         $pdo_function = $config["pdo"];
         $base_namespace = $config["namespace"];
         $base_folder = $config["folder"];
+        $auto_remove_prefix = true;
         $db = call_user_func($pdo_function);
         $all_tables = $db->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
         $classes = [];
@@ -32,6 +39,10 @@ class CodeGen {
             $class->setQualifiedName($qualified_name);
             foreach ($columns as $column) {
                 $constant_name = strtoupper($column);
+                if ($auto_remove_prefix) {
+                    $prefix = Inflector::singularize($table_name);
+                    $constant_name = preg_replace('/^' . $prefix . '_/i', '', $constant_name);
+                }
                 $constant = new PhpConstant();
                 $constant->setName($constant_name);
                 $constant->setValue($table_name . "." . $column);
@@ -39,7 +50,7 @@ class CodeGen {
                 $all_fields[$table_name . "." . $column] = $class;
             }
             self::add_table_name_method($class, $table_name);
-            self::add_pdo_string_method($class,$pdo_function);
+            self::add_pdo_string_method($class, $pdo_function);
             self::add_select_builder_method($class);
             self::add_insert_builder_method($class);
             self::add_update_builder_method($class);
@@ -90,6 +101,7 @@ class CodeGen {
             ');
         $class->setMethod($method);
     }
+
     static function add_get_fields_method($class) {
         $method = new PhpMethod("getFields");
         $method->setStatic(true);
