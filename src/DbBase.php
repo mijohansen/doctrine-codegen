@@ -8,6 +8,7 @@
 
 namespace DbUtil;
 
+use Doctrine\Common\Util\Inflector;
 use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Query\QueryBuilder;
@@ -15,23 +16,23 @@ use PDO;
 
 abstract class DbBase {
 
-    const CONF_DSN = 'dsn';
-    const CONF_USER = 'user';
-    const CONF_PASS = 'pass';
-
     /**
      * @return PDO
      */
     static function pdo() {
         static $db;
-        if (is_null($db)) {
+        static $config;
+        if(is_null($config)){
             $config = static::getConfig();
-            $dsn = $config[self::CONF_DSN];
-            $user = $config[self::CONF_USER];
-            $pass = $config[self::CONF_PASS];
-            $db = new PDO($dsn, $user, $pass, array(
+        }
+        if (is_null($db)) {
+            $db = new \PDO(
+                $config->getDsn(),
+                $config->getUsername(),
+                $config->getPasswd(),
+                array(
                 PDO::ATTR_PERSISTENT => true,
-                PDO::MYSQL_ATTR_INIT_COMMAND => 'SET sql_mode="TRADITIONAL"',
+                PDO::MYSQL_ATTR_INIT_COMMAND => 'SET sql_mode="TRADITIONAL", time_zone = "+00:00"',
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => FALSE
             ));
@@ -40,13 +41,10 @@ abstract class DbBase {
         return $db;
     }
 
-    static function getConfig() {
-        return [
-            self::CONF_DSN => null,
-            self::CONF_USER => null,
-            self::CONF_PASS => null,
-        ];
-    }
+    /**
+     * @return DbConfig
+     */
+     abstract static function getConfig();
 
     static function shortFieldName($long_field_name) {
         return array_pop(explode(".", $long_field_name));
@@ -178,6 +176,30 @@ abstract class DbBase {
             $output[] = $result_model;
         }
         return $output;
+    }
+
+    static function camelize($fieldName) {
+        $fieldName = explode(".", $fieldName);
+        $fieldName = array_pop($fieldName);
+        $fieldName = Inflector::camelize($fieldName);
+        return $fieldName;
+    }
+    static function camelizeRow($row){
+        $obj = new \stdClass();
+        foreach ($row as $field => $value){
+            $fieldName = self::camelize($field);
+            $obj->$fieldName = $value;
+        }
+        return $obj;
+    }
+
+    static function createPathWithKeys($basepath, $keys) {
+        foreach ($keys as $i => $fieldName) {
+            $fieldName = DbBase::camelize($fieldName);
+            $keys[$i] = "{" . $fieldName . "}";
+        }
+        array_unshift($keys, $basepath);
+        return implode("/", $keys);
     }
 
 }

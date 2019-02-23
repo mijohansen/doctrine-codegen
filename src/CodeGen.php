@@ -21,12 +21,14 @@ use PDO;
  */
 class CodeGen {
 
-    static function generate($config) {
-        $pdo_function = $config["pdo"];
-        $base_namespace = $config["namespace"];
-        $base_folder = $config["folder"];
-        $auto_remove_prefix = true;
-        $db = call_user_func($pdo_function);
+    static function generate(CodeGenConfig $config) {
+        $db = call_user_func($config->getPdo());
+        if (strlen($config->getNamespace()) < 2) {
+            throw new \Exception("Codegen: Namespace must be a string over 2 chars. '" . $config->getNamespace() . "' is not valid.");
+        }
+        if (!is_dir($config->getTargetFolder())) {
+            throw new \Exception("Codegen: Db " . $config->getTargetFolder() . " is not a valid folder path.");
+        }
         $all_tables = $db->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
         $classes = [];
         $all_fields = [];
@@ -34,12 +36,12 @@ class CodeGen {
             $sub = "SHOW COLUMNS FROM $table_name";
             $columns = $db->query($sub)->fetchAll(PDO::FETCH_COLUMN);
             $class_name = Inflector::classify($table_name);
-            $qualified_name = $base_namespace . "\\" . $class_name;
+            $qualified_name = $config->getNamespace() . "\\" . $class_name;
             $class = new PhpClass();
             $class->setQualifiedName($qualified_name);
             foreach ($columns as $column) {
                 $constant_name = strtoupper($column);
-                if ($auto_remove_prefix) {
+                if ($config->isAutoRemovePrefix()) {
                     $prefix = Inflector::singularize($table_name);
                     $constant_name = preg_replace('/^' . $prefix . '_/i', '', $constant_name);
                 }
@@ -50,7 +52,7 @@ class CodeGen {
                 $all_fields[$table_name . "." . $column] = $class;
             }
             self::add_table_name_method($class, $table_name);
-            self::add_pdo_string_method($class, $pdo_function);
+            self::add_pdo_string_method($class, $config->getPdo());
             self::add_select_builder_method($class);
             self::add_insert_builder_method($class);
             self::add_update_builder_method($class);
@@ -78,7 +80,7 @@ class CodeGen {
         $generator = new CodeGenerator();
         foreach ($classes as $class_name => $class) {
             $code = $generator->generate($class);
-            file_put_contents($base_folder . DIRECTORY_SEPARATOR . "$class_name.php", "<?php\n\n" . $code);
+            file_put_contents($config->getTargetFolder() . DIRECTORY_SEPARATOR . "$class_name.php", "<?php\n\n" . $code);
         }
     }
 
