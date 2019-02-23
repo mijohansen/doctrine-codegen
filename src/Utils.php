@@ -20,7 +20,7 @@ class Utils {
      */
     static function getConnectionBasedOnPdoFunction($pdoCallableFunction) {
         static $connection = [];
-        if (is_null($connection[$pdoCallableFunction])) {
+        if (!isset($connection[$pdoCallableFunction])) {
             $connectionParams = array(
                 "pdo" => call_user_func($pdoCallableFunction)
             );
