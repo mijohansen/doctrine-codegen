@@ -16,7 +16,9 @@
     "doctrine/dbal": "2.5.13",
     "doctrine/inflector": "1.1.0",
     "doctrine/instantiator": "1.0.5",
-    "gossi/php-code-generator": "^0.5.0",
+    "doctrine/cache": "v1.6.2",
+    "doctrine/collections": "v1.3.0",
+    "gossi/php-code-generator": "^v0.6",
     "ext-pdo": "*"
   },
   "require-dev": {

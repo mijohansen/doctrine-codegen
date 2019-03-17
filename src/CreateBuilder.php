@@ -15,16 +15,46 @@ class CreateBuilder {
     }
 
     /**
+     * @todo write test to logic
+     * @param $fields
+     * @return array
+     */
+    static function rearrangeFields($fields){
+        if (is_array($fields)) {
+            /**
+             * Go through fields and write them out
+             */
+            foreach ($fields as $key => $val) {
+                if (stripos($val, " as ")) {
+                    // We should not touch this one...
+                } elseif (!is_numeric($key)) {
+                    // When key is set, the expression in value should be printed AS alias
+                    $fields[$key] = $val . " AS `" . $key . "`";
+                } else {
+                    // Else just repeat the requestet field AS alias
+                    $fields[$key] = $val . " AS `" . $val . "`";
+                }
+            }
+            // remove keys
+            $fields = array_values($fields);
+        }
+        return $fields;
+    }
+    /**
      * @param $tableClassName
-     * @param $pdoString
+     * @param $fields
      * @return \Doctrine\DBAL\Query\QueryBuilder
      */
-    static function select($tableClassName) {
+    static function select($tableClassName, $fields, $where=[]) {
         $tableName = $tableClassName::getTableName();
         $pdoString = $tableClassName::getPdoString();
         $builder = self::createQueryBuilderFromPdoString($pdoString);
         $builder->from($tableName, $tableName);
-        $builder->select($tableName . ".*");
+        if (is_null($fields)) {
+            $fields = $tableName . ".*";
+        }
+        $fields = self::rearrangeFields($fields);
+        $builder->select($fields);
         return $builder;
     }
 
@@ -47,16 +77,31 @@ class CreateBuilder {
 
     /**
      * @param $tableClassName
-     * @param $data
+     * @param array $data
+     * @param array $where
      * @return \Doctrine\DBAL\Query\QueryBuilder
+     * @throws \Exception
      */
-    static function update($tableClassName, $data) {
+    static function update($tableClassName, array $data, array $where=[]) {
+        if (!count($data)) {
+            throw new \Exception("CreateBuilder::update requires data to atleast have one field.");
+        }
         $tableName = $tableClassName::getTableName();
         $pdoString = $tableClassName::getPdoString();
         $builder = self::createQueryBuilderFromPdoString($pdoString);
-        $builder->insert($tableName);
+        $builder->update($tableName);
         foreach ($data as $key => $val) {
             $builder->set($key, $builder->createNamedParameter($val));
+        }
+        $first=true;
+        foreach ($where as $key => $val) {
+            $predicate = $key . "=" . $builder->createNamedParameter($val);
+            if($first){
+                $builder->where($predicate);
+            } else {
+                $builder->andWhere($predicate);
+            }
+            $first=false;
         }
         return $builder;
     }

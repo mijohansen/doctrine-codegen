@@ -119,11 +119,22 @@ class CodeGen {
         $method->setStatic(true);
         $method->setVisibility(PhpMethod::VISIBILITY_PUBLIC);
         $method->setBody('
-            return \\' . CreateBuilder::class . '::select(self::class);
+            return \\' . CreateBuilder::class . '::select(self::class, $fields, $where);
             ');
         $doc = new Docblock();
         $doc->appendTag(new ReturnTag("\\" . QueryBuilder::class));
         $method->setDocblock($doc);
+
+        $fieldParam = new PhpParameter();
+        $fieldParam->setName("fields");
+        $fieldParam->setType([]);
+        $fieldParam->setValue(null);
+        $whereParam = new PhpParameter();
+        $whereParam->setName("where");
+        $whereParam->setType([]);
+        $whereParam->setExpression("[]");
+        $method->setParameters([$fieldParam, $whereParam]);
+
         $class->setMethod($method);
     }
 
@@ -138,10 +149,10 @@ class CodeGen {
         $doc->appendTag(new ReturnTag("\\" . QueryBuilder::class));
         $method->setDocblock($doc);
 
-        $param = new PhpParameter();
-        $param->setName("data");
-        $param->setType([]);
-        $method->setParameters([$param]);
+        $dataParam = new PhpParameter();
+        $dataParam->setName("data");
+        $dataParam->setType([]);
+        $method->setParameters([$dataParam]);
 
         $class->setMethod($method);
     }
@@ -151,15 +162,21 @@ class CodeGen {
         $method->setStatic(true);
         $method->setVisibility(PhpMethod::VISIBILITY_PUBLIC);
         $method->setBody('
-            return \\' . CreateBuilder::class . '::update(self::class, $data);
+            return \\' . CreateBuilder::class . '::update(self::class, $data, $where);
             ');
         $doc = new Docblock();
         $doc->appendTag(new ReturnTag("\\" . QueryBuilder::class));
         $method->setDocblock($doc);
-        $param = new PhpParameter();
-        $param->setName("data");
-        $param->setType([]);
-        $method->setParameters([$param]);
+
+        $dataParam = new PhpParameter();
+        $dataParam->setName("data");
+        $dataParam->setType([]);
+        $whereParam = new PhpParameter();
+        $whereParam->setName("where");
+        $whereParam->setType([]);
+        $whereParam->setExpression("[]");
+        $method->setParameters([$dataParam, $whereParam]);
+
         $class->setMethod($method);
     }
 

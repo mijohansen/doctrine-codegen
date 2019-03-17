@@ -47,7 +47,8 @@ abstract class DbBase {
      abstract static function getConfig();
 
     static function shortFieldName($long_field_name) {
-        return array_pop(explode(".", $long_field_name));
+        $parts = explode(".", $long_field_name);
+        return array_pop($parts);
     }
 
     static function getConnection() {
